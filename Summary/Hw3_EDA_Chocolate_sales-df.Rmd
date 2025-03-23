@@ -1,0 +1,354 @@
+---
+title: " EDA for The Chocolate sales dataset_Hw3"
+author: "Natalia Bonilla V."
+date: "2025-03-14"
+output:
+  html_document:
+    rmdformats::downcute:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exploratory Data Analisis
+Para este trabajo se escogio un database de Ventas de Chocolate, con venta en dolares. Descargado en Kaggle.
+https://www.kaggle.com/datasets/atharvasoundankar/chocolate-sales
+
+
+## 1. Explorando los datos
+
+### 2.1 Lectura de Chocolate Sales Dataset.
+
+```{r}
+df <- read.csv("Chocolate_Sales.csv")
+```
+
+
+### 1.2 Usando Head
+```{r}
+head(df, 3)
+```
+
+
+### 1.3 Usando Tail
+
+```{r}
+tail(df, 3)
+```
+
+
+## 2. Estructura del DataSet
+
+### 2.1 Usando summary
+Genera un resumen estadístico de cada variable. Para variables numéricas, muestra la media, mediana, mínimo, máximo y cuartiles.
+
+Para variables categóricas, muestra la frecuencia de cada categoría.
+
+```{r}
+summary(df)
+```
+
+### 2.2 Usando str
+Para ver la estructura de mis datos, puedo hacerlo con str.
+
+Aca debemos de tener en cuenta los tipos de datos que tiene cada columna ya que algunos se tendran que transformar para su uso estadistico.
+```{r}
+str(df)
+```
+
+En la estructura anterior, se puede apreciar que en _*_Amount_ se muestra como _char_, entonces a continuacion procederemos a eliminar el signo de dolar($), la coma(,) y convertirlo en numero, para poder trabajar con los datos.
+
+Para lograrlo se investigó la funcion **gsub**, que significa "Global Substitution", y se usa para reemplazar patrones dentro de un string.
+
+Formula: gsub(pattern, replacement, x) donde x = a la columna del df. En este caso df$Amount.
+
+El patron es una expresion regular, "*[\\$, ]*", y esto se reemplaza por -> "" que no tiene nada.
+
+Finalmente, se convierte en numero con la funcion as.numeric()
+
+```{r}
+df$Amount <- as.numeric(gsub("[\\$, ]", "", df$Amount))
+summary(df)
+```
+
+
+### 2.3 Conversion a Factor
+Para poder usar `Sales.Person` de mejor manera, lo hemos convertido a factor, y podemos ver determinar a simple vista un top de mejores vendedores, aunquen los datos no estan ordenados de mayor a menor.
+
+```{r}
+df$Sales.Person <- as.factor(df$Sales.Person)
+sort(table(df$Sales.Person), decreasing = TRUE)
+```
+
+
+Aca convertimos `Country` a factor. Mas adelante veremos un grafico para observar visualmente el pais con mayor venta
+
+```{r}
+country_factor <- as.factor(df$Country)
+sort(table(country_factor), decreasing = TRUE)
+```
+
+## 3. Metricas Estadisticas
+Vamos a explorar el promedio, la media.
+
+Acá estamos usando **num_cols** para almacenar todos los rows de las columnas que solo son numericas con sapply.
+
+```{r}
+num_cols <- df[, sapply(df, is.numeric)]
+head(num_cols, 5)
+```
+
+
+### 3.2 Minimos
+Aca vamos aplicar el _min_ para **num_cols**
+
+```{r}
+min_values <- apply(num_cols, 2, min, na.rm = TRUE)
+min_values
+```
+
+
+### 3.3 Maximos
+Lo mismo para el _max_ en **num_cols**
+
+```{r}
+max_values <- apply(num_cols, 2, max, na.rm = TRUE)
+max_values
+```
+
+
+### 3.4 Promedios
+Aplicaremos la misma formula para revisar los promedios
+
+```{r}
+mean_values <- apply(num_cols, 2, mean, na.rm = TRUE)
+mean_values
+```
+
+
+### 3.5 Mediana
+Con la mediana verificaremos que tantos valores atipicos tiene el promedio de datos
+
+```{r}
+median_values <- apply(num_cols, 2, median, na.rm = TRUE)
+median_values
+```
+
+
+### 3.6 Desviacion Estandart (DE)
+Revisaremos si tenemos una DE alta o baja con respecto al promedio
+
+```{r}
+sd_values <- apply(num_cols, 2, sd, na.rm = TRUE)
+sd_values
+```
+### 3.7 Correlacion entre Amount y Box shipped
+
+```{r}
+cor(df$Amount, df$Boxes.Shipped)
+```
+
+
+## 4. Analisis de las Variables Amount y Box shipped
+No existe una corelacion entre `Amount` y `Boxes.Shipped`. Las ventas no dependen de la cantidad de cajas enviadas.
+
+### 4.1 Analisis Amount
+- La diferencia entre el valor `min_values` y el `max_values`}}` para **Amount** es muy significativa, lo que indica que hay amplia variabilidad en los montos de las ventas.
+- La `median_values` < `mean_values` lo que quiere decir que hay valores muy altos que llevan la media hacia arriba.
+- La `sd_values` es bastante alta, lo qeu confirma la alta variabilidad en los montos de las ventas.
+
+
+### 4.2 Analisis Box Shipped
+- La diferencia entre el valor `min_values` y el `max_values` para **Box Shipped** es muy significativa, lo que indica que hay amplia variabilidad en la cantidad de productos enviados.
+- La `median_values` < `mean_values` pero no es una diferencia tan pronunciada con en Amount.
+- La `sd_values` es considerablemente alta, lo que confirma la variabilidad en la cantidad de cajas enviadas.
+
+
+
+## 5. Visualizaciones
+Los Graficos que vamos a utilizar en este caso seran:
+
+  - Scatterplot: Grafico de dispersion para visualizar la relacion entre _Amount_ y _Boxes.Shipped_ y ver graficamente lo que vimos en numeros anteriores.
+  - Boxplot: Para ver los valores atipicos de _Amount_ y _Boxes.Shipped_.
+  - Bar: Graficos en los que veremos rankings de mejores y peores ventas, vendedores, paises.
+  - Line: Con este podremos visualizar cuando se vendio mas.
+
+
+Librerias a utilizar
+```{r}
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+```
+
+
+
+### 5.1 Scatterplot
+
+Aca mostraremos la distribución de los puntos de datos.
+
+  - La línea roja muestra la tendencia lineal entre las variables. No hay regresion lineal.
+  - Los puntos que se alejan mucho de la línea de regresión podrían ser valores atípicos.
+```{r}
+ggplot(df, aes(x=Boxes.Shipped, y = Amount, color=Country))+
+  geom_point(size=1, alpha = 0.6) + 
+  geom_smooth(method = "lm", se = FALSE, color = "#ff5959") +
+  labs(title = "Relacion entre Amount y Boxes.Shipped",
+       x = "Boxes Shipped",
+       y = "Amount (USD)") +
+  scale_y_continuous(labels = scales::label_dollar()) +
+  theme_minimal() #+
+```
+
+### 5.2 Boxplot
+Como la DE es larga, habian sospechas de outliers, aca podemos identificar esos valores atipicos visualmente.
+
+```{r}
+ggplot(df, aes(x = Amount)) +
+  geom_boxplot(fill="lightblue") +
+  scale_x_continuous(labels = scales::label_dollar()) +
+  labs(title = "Boxplot per Amount (USD)",
+       x = "Amount (USD)",
+       y = "Frequency")
+```
+
+
+```{r}
+ggplot(df, aes(x = Boxes.Shipped)) +
+  geom_boxplot(fill="lightblue") +
+  labs(title = "Boxplot Boxes shipped",
+       x = "Boxes Shipped",
+       y = "Frequency")
+```
+
+
+
+
+### 5.3 Bar
+Aca veermos los distintos usos del Grafico de Barras, funciona muy bien para rankings
+
+### 5.3.1 Rankings
+
+
+Para el *new_topN** usamos "%>%" que es el **pipe operator** del paquete *dplyr* que nos ayuda a concatenar varias operaciones. Entonces pasamos df, a la siguiente funcion de la cadena.
+
+**Arrange()** se utiliza para reordenar las filas de un data frame basándose en los valores de una o más columnas. Mientras que **desc()** nos ordena de mayor a menor.
+
+Para un Top N usaremos esta funcion la cual podremos ultilizar atravez de nuestro EDA y podremos definir si es un rancking mas o menos venats con head o tail.
+```{r}
+new_topN <- function(topN, rank = "head") {
+  df %>%
+    group_by(Product) %>%               # Group by Product
+    summarize(Amount = sum(Amount)) %>%  # Sum sales for each product
+    arrange(desc(Amount)) %>%            # Sort in descending order
+    { if (rank == "head") head(., topN) else tail(., topN) }  # Apply head or tail dynamically
+}
+```
+
+
+### 5.3.1.1 Top 20 prductos más vendido
+A continuacion se presenta un grafico de barras, con el fin de mostrar el top 20 de los productos mas vendidos.
+
+Aqui usamos la funcion *scale_x_continuous** para darle formato a de dolares al eje X
+```{r}
+ggplot(new_topN(10, "head"), aes(x = Amount, y = reorder(Product, Amount), fill = Product)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = scales::label_dollar()(Amount)),  
+            hjust = 1.2, color = "white", size = 4, fontface = "bold") +  
+  scale_x_continuous(labels = scales::label_dollar()) +
+  labs(title = "Top 10 Mayores Ingresos Generados por Producto", 
+       x = "Amount (USD)", y = "Product") +
+  theme_minimal()
+```
+
+
+### 5.3.1.2 Top 5 producto menos vendido
+Aca se presenta un grafico de barras, mostrando el top 5 de los productos menos vendidos.
+
+```{r}
+ggplot(new_topN(5, "tail"), aes(x = Amount, y = reorder(Product, Amount), fill = Product)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = scales::label_dollar()(Amount)),  # Add formatted labels 
+            hjust = 1.2, color = "white", size = 4, fontface = "bold") +  # Adjust label position & color
+  scale_x_continuous(labels = scales::label_dollar()) +
+  labs(title = "Top 5 Menores Ingresos Generados por Producto", x = "Amount (USD)", y = "Product") +
+  theme_minimal()
+```
+
+
+
+### 5.3.1.3  Top 10 Mejores Vendedores
+
+```{r}
+sales_rate <- df %>%
+  group_by(Sales.Person) %>%
+  summarize(Total_Amount = sum(Amount)) %>%
+  arrange(desc(Total_Amount)) %>%  # Sort from highest to lowest
+  slice(1:10)
+
+ggplot(sales_rate, aes(x = reorder(Sales.Person, Total_Amount), y = Total_Amount)) +
+  geom_bar(stat = "identity", fill = "#4682B4") +
+  geom_text(aes(label = scales::label_dollar()(Total_Amount)),  # Add formatted labels 
+          hjust = 0.5, vjust = 2, color = "white", size = 3, fontface = "bold") +
+  scale_y_continuous(labels = scales::label_dollar()) +
+  labs(title = "Top 10 de los mejores Vendedores", x = "Sales Person", y = "Amount (USD)") +
+  scale_fill_viridis_d(option = "C") +  # "C" is a blueish Viridis scale
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+```
+
+
+### 5.3.2 Productos vendidos por Pais
+
+
+```{r}
+country_sales <- df %>%
+  group_by(Country) %>%
+  summarize(Total_Amount = sum(Amount)) %>%
+  arrange(desc(Total_Amount))  # Sort from highest to lowest
+
+ggplot(country_sales, aes(x = Total_Amount, y = reorder(Country, Total_Amount))) +
+  geom_bar(stat = "identity", fill = "#4682B4") +
+  geom_text(aes(label = scales::label_dollar()(Total_Amount)),  # Add formatted labels 
+          hjust = 1.2, color = "white", size = 4, fontface = "bold") +
+  scale_x_continuous(labels = scales::label_dollar()) +
+  labs(title = "Pais con mayor venta de Chocolates", x = "Country", y = "Amount (USD)") +
+  scale_fill_viridis_d(option = "C") +  # "C" is a blueish Viridis scale
+  theme_minimal()
+```
+
+
+### 5.4 Grafico Lineas  
+Vamos a darle formato a `Date` para poder trabajar con el y poder visualizar el comportamiento de los Datos.
+
+```{r}
+library(lubridate)
+df$Date <- as.Date(df$Date, format = "%d-%b-%y")
+df$Month <- format(df$Date, "%Y-%m")
+df$month <- floor_date(df$date, "month")
+
+monthly_sales <- aggregate(Amount ~ Month, data = df, sum)
+monthly_sales <- monthly_sales[order(monthly_sales$Amount, decreasing = TRUE), ]
+```
+
+
+### 5.4.1 Comportamiento de las Ventas por mes
+
+
+```{r}
+ggplot(monthly_sales, aes(x = Month, y = Amount, group = 1)) +
+  geom_line(color = "#4682B4", size = 1) +
+  geom_point(color = "#3c6e99", size = 3) +
+  geom_text(aes(label = scales::label_dollar()(Amount)),  # Add formatted labels 
+          hjust = 0.5, vjust = -0.4, color = "black", size = 4) +
+  scale_y_continuous(labels = scales::label_dollar()) +
+  labs(title = "Comportamiento de Ventas Mensuales",
+       x = "Mes",
+       y = "Ventas Totales") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+

@@ -1,0 +1,212 @@
+---
+title: "Exploring data_Hw2"
+author: "Natalia Bonilla V"
+date: "2025-03-11"
+output: 
+  html_document:
+    rmdformats::downcute
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tarea 2
+* Una vez descargados, el primer paso será importar correctamente los datos a R, asegurándose de que el archivo se lea sin errores y se almacene en un objeto adecuado para su análisis.
+
+* Deberá:
+  * Calcular al menos cinco métricas estadísticas básicas para el análisis exploratorio del conjunto de datos(la media, la mediana, la desviación estándar, los valores máximos y mínimos).
+  * Deberá realizar dos gráficos utilizando la librería ggplot2
+  * El trabajo debe presentarse en un script o archivo RMarkdown
+  * Código claramente comentado
+  * Los resultados interpretados de forma clara y concisa
+  
+* Fuente de los datos, proveído por el profesor. Se cree que está en Kaggle.
+
+
+```{r cars}
+df <- read.csv("cars.csv")
+head(df, 3)
+```
+```{r}
+tail(df, 3)
+```
+## Estructura de los Datos
+Vamos a echar un vistazo a nuestros datos para conocerlos mejor.
+
+* Con el **summary** vemos un resumen de nuestros datos y algunas características según el tipo de dato.
+```{r}
+summary(df)
+```
+
+
+* Con el **str** podemos ver una lista de las variablesy su tipo de dato.
+```{r}
+str(df)
+```
+
+
+* Y finalmente **colnames** para tener más claro el nombre de las columnas del dataset.
+```{r}
+colnames(df)
+```
+
+
+## Statistical metrics
+
+### Max:
+* Acá estamos usando **num_columns** para almacenar todos los rows de las columnas que solo son numéricas con *sapply.*
+* En el *apply* se usa el 2 para que se aplique a cada columna, el *na.rm = TRUE* con el MARGIN = max para que devuelva el máximo de cada columna.
+```{r}
+num_columns <- df[, sapply(df, is.numeric)]
+
+max_values <- apply(num_columns, 2, max, na.rm = TRUE)
+max_values
+
+```
+
+
+### Min:
+* Por acá usamos la misma estructura del MAX pero esta vez con el mínimo 
+```{r}
+min_values <- apply(num_columns, 2, min, na.rm = TRUE)
+min_values
+```
+
+
+### Average:
+* Seguidamente guardamos en **cols_avg** los *promedios* de las columnas numéricas que pudimos ver en la función anterior* str(df)* e imprimirlas.
+* Importante mencionar que cuando *na.rm es TRUE* ignora los datos NA para hacer los cálculos.
+
+```{r}
+#average = colMeans(df[,5:6])
+col_avg <- sapply(num_columns, mean, na.rm = TRUE)
+col_avg
+```
+
+
+### Median
+Esta se utiliza para representar el valor central de un conjunto de datos y es menos sensible a valores atípicos que el promedio.
+
+* Estamos aplicando a **num_colums** que usamos anteriormente, para obtener la mediana de las columnas numéricas.
+
+* Acá usamos *apply*, pero se puede hacer la operación con *sapply* también, los 2 general el mismo resultado.
+La estructura para el *sapply* seria col_median <- sapply(num_columns, median, na.rm = TRUE).
+  * **Apply**: Se usa en matrices o data frame, cuando se quiere especificar si uasr rows o columns.
+    apply(X, MARGIN, FUN, ...): X = df | MARGIN = 1 rows o 2 columns | FUN = mean, median, sum, sd | ... = argumentos para FUN
+  * **Sapply**: Se aplica una funcion a cada elemento de la lista o vector.
+    sapply(X, FUN): X = df | FUN = mean, median, sum | ... = argumentos para FUN
+```{r}
+col_median <- apply(num_columns, 2, median, na.rm = TRUE)
+col_median
+```
+
+
+### Stantard Derivation
+Esta sirve para medir la dispersión o variabilidad de los datos alrededor de la media/promedio.
+
+Una **SD alta** significa que los datos están más dispersos, mientras que una **SD baja** indica que los datos están más agrupados alrededor de la media o promedio.
+
+* La usaremos para:
+  * **Entender la dispersión:** Permite evaluar la homogeneidad o heterogeneidad de los datos. 
+  * **Identificar outliers:** Valores extremos que se desvían significativamente de la media pueden ser detectados con la desviación estándar. 
+  * **Comparar conjuntos** de datos: Permite comparar la dispersión de diferentes variables o grupos de datos. 
+  * **Tomar decisiones:** Ayuda a tomar decisiones informadas sobre la calidad y la representatividad de los datos. 
+  
+Acá  usamos *apply*, con la misma estructura que usamos para la mediana. solo cambiando la función en FUN a sd
+```{r}
+column_sd <- apply(num_columns, 2, sd, na.rm = TRUE)
+column_sd
+```
+
+
+### Mean, Meadian & Standard Derivation conclusions:
+Como ejemplo vamos a analizar 2 de las variables a las que les aplicamos el promedio, la median y la desviación estándar.
+
+1. Odometer Value
+  * Mean: 2.488646e+05 ~ 248,864.6
+  * Median: 250000     = 250,000
+  * SD: 1.360724e+05   ~ 136,072.4
+
+El promedio y la mediana están bastante cerca (248,864.6 vs 250,000) lo que sugiere que la distribución es casi simétrica o aproximada.
+
+La DE está relativamente alta (136,072.4) indicando una amplia dispersión en los valores. Quiere decir que hay una variabilidad significativa en el recorrido de los carros.
+
+2. Price (USD)
+  * Mean: 6.639971e+03 ~ 6,639.97
+  * Median: 4800       ~ 4,800
+  * SD: 6.428152e+03   ~ 6,428.15
+
+El promedio es significativamente más alto que la mediana (6,639.97 vs. 4,800), esto puede sugerir que hay valores atípicos de precios altos que impulsan el promedio al alza.
+
+La DE es grande (6428.15) lo que puede confirmar una amplia dispersión de los precios. Existe una variabilidad significativa en el costo de los carros.
+
+## Visualizations
+```{r}
+library(ggplot2)
+library(ggthemes)
+library(tidyr)
+```
+
+
+### Histogram
+Vemos que se acerca a ser simétrico porque la media y la mediana estaban cerca (248,864.6 vs 250,000), pero con algunos valores fuera de rango que nos indicó la DE.
+
+```{r}
+ggplot(df, aes(x = odometer_value)) +
+  geom_histogram(binwidth = 10000, fill = "blue", color = "black") +
+  labs(title = "Distribution of Odometer Values",
+       x = "Odometer Value",
+       y = "Frequency")
+```
+
+
+### Boxplots
+
+Para Visualizar los Outliers de odometer_value que pudimos deducir en la DE.
+
+```{r}
+ggplot(df, aes(x = odometer_value)) +
+  geom_boxplot(fill="lightblue") +
+  labs(title = "Boxplot per odometer_value",
+       x = "Odometer Value",
+       y = "Frequency")
+```
+
+
+### Price_usd
+
+Vemos que se acerca a ser simétrico porque la media y la mediana estaban cerca (248,864.6 vs 250,000), pero con algunos valores fuera de rango que nos indicó la DE.
+
+```{r}
+ggplot(df, aes(x = price_usd)) +
+  geom_histogram(binwidth = 1000, fill = "red", color = "black") +
+  labs(title = "Distribution of Price (USD)",
+       x = "Price (USD)",
+       y = "Frequency")
+```
+
+
+Para Visualizar los Outliers de **price_usd** que pudimos deducir en el SD
+
+```{r}
+ggplot(df, aes(x = price_usd)) +
+  geom_boxplot(fill="lightblue") +
+  labs(title = "Boxplot per Price (USD)",
+       x = "Price (USD)",
+       y = "Frequency")
+```
+
+
+```{r}
+ggplot(df, aes(y = price_usd)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Boxplot of Price (USD)",
+       y = "Price (USD)")
+```
+
+
+
+
+
+

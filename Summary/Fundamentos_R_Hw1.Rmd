@@ -1,0 +1,186 @@
+---
+title: "Introdución a R"
+author: "Natalia Bonilla V."
+date: "2025-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Parte 1: Operaciones Aritméticas y Operadores Lógicos
+
+### 1. Aritmética en R
+
+```{r}
+a <- 15
+b <- 4
+```
+
+
+La suma de a y b
+```{r}
+result =  a + b
+print(result)
+```
+
+
+La resta de a y b
+```{r}
+result =  a - b
+print(result)
+```
+
+
+El producto de a y b
+```{r}
+
+result =  a * b
+print(result)
+```
+
+
+El cociente de a entre b
+```{r}
+result =  a / b
+print(result)
+```
+
+
+El módulo (residuo) de a entre b
+```{r}
+result =  a %% b
+print(result)
+```
+
+
+a elevado a la potencia b
+```{r}
+result =  a ^ b
+print(result)
+```
+
+
+## 2. Operadores Lógicos
+### Asignacion de valores logicos a las variables
+
+```{r}
+x <- TRUE
+y <- FALSE
+
+# x AND | Impresion directa
+print(x && y)
+
+# x OR y | Impresion directa
+print(x || y)
+
+# NOT x | Impresion directa
+print(!x)
+```
+
+
+
+## Parte 3: Condicionales
+### 1. Verificación de números positivos, negativos o cero
+```{r}
+#asignacion del valor a num como variable
+num <- 0
+```
+
+
+
+El if debe tener reglas para determinar si un numero es positivo, negativo o igual a 0.
+
+Esto lo hace evaluando cada condicion dentro de los parentesis.
+```{r}
+if (num > 0){
+  print("El Numero es positivo")
+}else if(num < 0 ){
+  print("El Numero es negativo")
+}else{
+  print("El numero es cero")
+}
+```
+
+
+### 2. Cálculo de descuentos
+```{r}
+#asignacion del valor a precio como variable
+precio <- 50
+```
+
+
+Para calculcar el descuento se usa el factor de la variable descuento/100, que seria 0.2 para 20%
+y 0.1 para 10%, y aplicamos el descuento restando precio a la multiplicaciones de precio * descuento.
+
+Se usa la funcion paste() para poder incluir variables en una cadena de texto.
+```{r}
+if(precio > 100){
+  descuento <- 20/100
+  precioDescuent <-  precio - (precio*descuento)
+  print(paste("Su descuento es de un 20% por lo que el precio final es de:", precioDescuent))
+}else{
+  descuento <- 10/100
+  precioDescuent <-  precio - (precio*descuento)
+  print(paste("Su descuento es de un 10% por lo que el precio final es de:", precioDescuent))
+}
+```
+
+
+## Parte 4: Bucles en R
+### 1. Bucle FOR: Tabla de Multiplicar
+```{r}
+#asignacion del valor a numero como variable
+numero <- 7 #between 1 & 10
+```
+
+
+Creamos una funcion que recibe como parametro 'x', el cual se usa para indicar que tabla de multiplicar estamos creando
+siendo que si x = 7, imprimiremos la tabla del 7.
+
+El bucle for, usa i como contador, del 1 al 10 en este caso, cada ciclo for i suma 1, x lo que podemos determinar que
+cuando i llegue hasta 10, este termina, mientras tanto vamos imprimiendo el resultado que seria la tabla de multiplicar 
+```{r}
+
+calculator <- function(x){
+  for(i in 1:10){
+    print(paste(i, '*', x, '=', i*x))
+  }
+}
+calculator(numero)
+```
+
+
+### 2. Bucle WHILE: Suma Acumulativa
+```{r}
+#asignacion de valores a las variables
+suma_total <- 0
+n <- 0
+```
+
+
+While determina que su bucle contiua hasta que la condicion sea FALSE, por lo que dentro del while tenemos un contador n
+Para que definir el bucle. mientras suma_total acumula n mas su contenido, para obtener la suma total del 1 al 10 
+```{r}
+while (n <= 10 ) {
+  #print(paste(suma_total, '=', n, '+', suma_total, ':',  n + suma_total))
+  suma_total <- n + suma_total
+  n = n+1
+}
+print(suma_total)
+```
+
+
+## 3. Bucle FOR y Condicional: Números Pares
+para determinar si un numero es par, comparamos si el residuo de los valores es igual a 0, si es asi, este numero es par.
+i como contador del 1 al 20, va a ser evaluado por el if, e imprimir solamente los valores par.
+
+```{r}
+for(i in 1:20){
+  if(i %% 2 == 0 ){
+    print(i)
+  }
+}
+```
+

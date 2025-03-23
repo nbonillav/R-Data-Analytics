@@ -1,0 +1,233 @@
+---
+title: "Data Cleaning + Charts for FIFA ranking dataset_Hw4"
+author: "Natalia Bonilla V."
+date: "2025-03-21"
+output:
+  html_document:
+    rmdformats::readthedown
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Cleaning + EDA + Corralation Chart
+* Dataset proveído por el Profesor.
+
+
+## Cargar Librerias
+
+
+```{r}
+library(tidyverse)
+library(naniar)
+library(Amelia)
+library(visdat)
+library(GGally)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+```
+
+
+## Importar el DataSet
+
+```{r}
+df <- read.csv("fifa_ranking.csv")
+head(df)
+```
+
+
+## Data Cleaning
+* Para el data cleaning, primero se deben de estudiar las variables y determinar cuales no influirían el análisis, para una posible eliminación.
+* Determinar cuáles variables deben de cambiar su estado, ya sea a factor, fecha numérico, etc.
+```{r}
+str(df)
+```
+```{r}
+colnames(df)
+```
+```{r}
+colSums(is.na(df))
+```
+```{r}
+summary(df)
+```
+
+
+### Confederation to Factor.
+
+```{r}
+confed_count <- sort(table(df$confederation), decreasing = TRUE)
+confed_count
+```
+
+```{r}
+df$confederation <- as.factor(df$confederation)
+str(df)
+```
+
+
+### Rank_date to Date.
+
+```{r}
+df$rank_date <- df$rank_date <- as.Date(df$rank_date, format = "%Y-%m-%d")
+
+rank_date_count <- sort(table(df$rank_date), decreasing = TRUE)
+#rank_date_count
+```
+
+
+### Columnas Eliminadas
+Se elimana las columnas de promedios  de años actuales y pasados además, de la abreviatura de los paises.
+```{r}
+df = df %>% select(-cur_year_avg_weighted  , -last_year_avg_weighted , -two_year_ago_weighted, -three_year_ago_weighted, -country_abrv)
+str(df)
+```
+
+
+### Valores Missing
+Buscando valores perdidos
+```{r}
+vis_miss(df)
+```
+
+
+## EDA
+```{r}
+df$total_points <- as.numeric(df$total_points)
+```
+
+
+### Ranking a través del tiempo | Brasil
+```{r}
+equipo <- "Brazil"
+
+df_equipo <- df %>%
+  filter(country_full == equipo)
+
+ggplot(df_equipo, aes(x = rank_date, y = rank)) +
+  geom_line() +
+  scale_y_reverse() + # Invierte el eje y para que el ranking 1 esté en la parte superior
+  labs(title = paste("Evolución del Ranking de", equipo),
+       x = "Fecha",
+       y = "Ranking") +
+  theme_minimal()
+```
+
+
+### Ranking a través del tiempo | Costa Rica
+```{r}
+
+equipo <- "Costa Rica"
+
+df_equipo <- df %>%
+  filter(country_full == equipo)
+
+ggplot(df_equipo, aes(x = rank_date, y = rank)) +
+  geom_line() +
+  scale_y_reverse() + # Invierte el eje y para que el ranking 1 esté en la parte superior
+  labs(title = paste("Evolución del Ranking de", equipo),
+       x = "Fecha",
+       y = "Ranking") +
+  theme_minimal()
+```
+
+
+### Puntos Totales por Confederación
+
+```{r}
+ggplot(df, aes(x = confederation, y = total_points, fill = confederation)) +
+  geom_boxplot() +
+  labs(title = "Puntos Totales por Confederación",
+       x = "Confederación",
+       y = "Puntos Totales") +
+  theme_minimal()
+```
+
+
+### Máximo de puntos por Confederación
+
+```{r}
+max_points_confederation <- df %>%
+  group_by(confederation) %>%
+  summarise(max_points = max(total_points, na.rm = TRUE)) # na.rm = TRUE para ignorar NA
+
+ggplot(max_points_confederation, aes(x = confederation, y = max_points, fill = confederation)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Máximo de Puntos por Confederación",
+       x = "Confederación",
+       y = "Máximo de Puntos") +
+  theme_minimal()
+
+```
+
+
+### Configuración para crear grafico de top 10 del Máximo de Puntos por Equipo por Confederación
+
+```{r}
+crear_grafico_top_10_max_puntos_confederacion <- function(datos) {
+  top_10_max_points_team_confederation <- datos %>%
+    group_by(confederation, country_full) %>%
+    summarise(max_points = max(total_points, na.rm = TRUE)) %>%
+    ungroup() %>%
+    group_by(confederation) %>%
+    arrange(desc(max_points)) %>%
+    slice_head(n = 10)
+
+  ggplot(top_10_max_points_team_confederation, aes(x = reorder(country_full, max_points), y = max_points, fill = confederation)) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    labs(title = "Top 10 Máximo de Puntos por Equipo por Confederación",
+         x = "Equipo",
+         y = "Máximo de Puntos",
+         fill = "Confederación") +
+    theme_minimal()
+}
+```
+
+
+### Top 10 del Máximo de Puntos por Equipo por Confederación CONMEBOL
+
+```{r}
+df_conmebol <- df %>%
+  filter(confederation == "CONMEBOL")
+
+crear_grafico_top_10_max_puntos_confederacion(df_conmebol)
+```
+
+
+### Top 10 del Máximo de Puntos por Equipo por Confederación UEFA
+
+```{r}
+df_uefa <- df %>%
+  filter(confederation == "UEFA")
+
+crear_grafico_top_10_max_puntos_confederacion(df_uefa)
+```
+
+
+### Mapa de Correlación entre todas las columnas
+
+Este codigo muestra varios mapas complejos de correlación
+```{r}
+numeric_vars <- df %>% select_if(is.numeric)
+#ggpairs(numeric_vars)
+```
+ 
+### Mapa de Calor de Correlación de las columnas
+En lugar del anterior, optamos por uno mas legible y visualmente agradable.
+Un valioso recurso para conocer los mapas de correlación y sus variantes se uso la pag https://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram
+```{r}
+library(corrplot)
+library(RColorBrewer)
+
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+corrplot(cor_matrix, method="circle", type="upper", tl.col="black", tl.srt=45,
+        col=brewer.pal(n=8, name="PuOr"))
+```
+```{r}
+
+```
+
