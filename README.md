@@ -1,4 +1,4 @@
 # R-Data-Analytics
-Projects using R and RMarkdown.
+Projects using R and RMarkdown. _University projects._
 
-As part of a university course.
+
